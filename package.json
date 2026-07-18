@@ -1,0 +1,14 @@
+{
+  "name": "blsbot",
+  "version": "1.0.0",
+  "description": "A Discord bot that welcomes members and reports basic server security settings",
+  "main": "index.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "discord.js": "^14.16.2",
+    "dotenv": "^16.4.3"
+  }
+}
