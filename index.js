@@ -1,7 +1,4 @@
 const { Client, GatewayIntentBits, Events, EmbedBuilder } = require('discord.js');
-const dotenv = require('dotenv');
-
-dotenv.config();
 
 const client = new Client({
   intents: [
@@ -15,7 +12,7 @@ const WELCOME_CHANNEL_ID = process.env.WELCOME_CHANNEL_ID;
 const WELCOME_MESSAGE = process.env.WELCOME_MESSAGE || 'Welcome to the server! Please read the rules and enjoy your stay.';
 
 if (!TOKEN) {
-  console.error('Missing DISCORD_TOKEN in .env');
+  console.error('Missing DISCORD_TOKEN. Set it in the deployment environment or a .env file.');
   process.exit(1);
 }
 
@@ -81,22 +78,32 @@ async function registerSlashCommand(client) {
 
   const guild = client.guilds.cache.get(guildId);
   if (!guild) {
-    console.log(`Guild ${guildId} not found in cache yet.`);
+    console.log(`Guild ${guildId} not found in cache yet. Waiting for guild to become available...`);
     return;
   }
 
   try {
-    await guild.commands.create({
-      name: 'security',
-      description: 'Show a snapshot of server security settings',
-    });
-    console.log('Registered /security command');
+    const existingCommands = await guild.commands.fetch();
+    const hasSecurityCommand = existingCommands.some((command) => command.name === 'security');
+
+    if (!hasSecurityCommand) {
+      await guild.commands.create({
+        name: 'security',
+        description: 'Show a snapshot of server security settings',
+      });
+    }
+
+    console.log('Slash command ready');
   } catch (error) {
     console.warn('Could not register slash command:', error.message);
   }
 }
 
 client.on(Events.ClientReady, async () => {
+  await registerSlashCommand(client);
+});
+
+client.on(Events.GuildCreate, async () => {
   await registerSlashCommand(client);
 });
 
