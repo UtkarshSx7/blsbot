@@ -1,4 +1,4 @@
-const { Client, GatewayIntentBits, Events, EmbedBuilder } = require('discord.js');
+const { Client, GatewayIntentBits, Events, EmbedBuilder, ActivityType } = require('discord.js');
 
 const client = new Client({
   intents: [
@@ -35,11 +35,26 @@ function buildSecurityReport(guild) {
   return embed;
 }
 
+async function setBotPresence() {
+  const guildId = process.env.GUILD_ID;
+  const guild = guildId ? client.guilds.cache.get(guildId) : client.guilds.cache.first();
+  const guildName = guild?.name || 'your server';
+
+  if (client.user) {
+    await client.user.setActivity({
+      name: `Watching : ${guildName}`,
+      type: ActivityType.Watching,
+    });
+  }
+}
+
 client.once(Events.ClientReady, async () => {
   console.log(`Logged in as ${client.user.tag}`);
 
   const guilds = client.guilds.cache.map((guild) => guild.name).join(', ') || 'none';
   console.log(`Connected guilds: ${guilds}`);
+
+  await setBotPresence();
 });
 
 client.on(Events.GuildMemberAdd, async (member) => {
@@ -105,6 +120,7 @@ client.on(Events.ClientReady, async () => {
 
 client.on(Events.GuildCreate, async () => {
   await registerSlashCommand(client);
+  await setBotPresence();
 });
 
 client.login(TOKEN);
