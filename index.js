@@ -12,6 +12,7 @@ const client = new Client({
 const TOKEN = process.env.DISCORD_TOKEN;
 const WELCOME_CHANNEL_ID = process.env.WELCOME_CHANNEL_ID;
 const WELCOME_MESSAGE = process.env.WELCOME_MESSAGE || 'Welcome to the server! Please read the rules and enjoy your stay.';
+const VOICE_CHANNEL_ID = process.env.VOICE_CHANNEL_ID || '1487486723402367158';
 
 const COMMAND_DEFINITIONS = [
   {
@@ -104,7 +105,6 @@ function buildHelpEmbed() {
 }
 
 async function setBotPresence() {
-  // Use an explicit presence name, overridable via PRESENCE_NAME env var.
   const presenceName = process.env.PRESENCE_NAME || 'The BLS Security';
 
   if (client.user) {
@@ -115,14 +115,16 @@ async function setBotPresence() {
   }
 }
 
-async function joinSelectedVoiceChannel() {
-  const channelId = process.env.VOICE_CHANNEL_ID;
-  if (!channelId) return;
+async function joinVoiceChannelOnStartup() {
+  if (!VOICE_CHANNEL_ID) {
+    console.log('VOICE_CHANNEL_ID not set. Skipping auto-join.');
+    return;
+  }
 
   try {
-    const channel = await client.channels.fetch(channelId);
-    if (!channel || !channel.isVoiceBased || !channel.isVoiceBased()) {
-      console.warn(`VOICE_CHANNEL_ID ${channelId} is not a voice channel.`);
+    const channel = await client.channels.fetch(VOICE_CHANNEL_ID);
+    if (!channel || !channel.isVoiceBased()) {
+      console.warn(`VOICE_CHANNEL_ID ${VOICE_CHANNEL_ID} is not a voice channel.`);
       return;
     }
 
@@ -138,7 +140,7 @@ async function joinSelectedVoiceChannel() {
       adapterCreator: guild.voiceAdapterCreator,
     });
 
-    console.log(`Joined voice channel ${channelId}`);
+    console.log(`Bot joined voice channel ${VOICE_CHANNEL_ID}`);
   } catch (error) {
     console.warn('Failed to join voice channel:', error.message);
   }
@@ -151,6 +153,7 @@ client.once(Events.ClientReady, async () => {
   console.log(`Connected guilds: ${guilds}`);
 
   await setBotPresence();
+  await joinVoiceChannelOnStartup();
 });
 
 client.on(Events.GuildMemberAdd, async (member) => {
@@ -246,13 +249,8 @@ async function registerSlashCommands(client) {
     return;
   }
   try {
-    // Fetch the guild from the API to ensure it's available even if not cached.
     const guild = await client.guilds.fetch(guildId);
-
-    // Use commands.set to register (and update) all commands for the guild at once.
-    // Guild commands appear immediately in Discord.
     await guild.commands.set(COMMAND_DEFINITIONS);
-
     console.log(`Slash commands registered for guild ${guildId}`);
   } catch (error) {
     console.warn('Could not register slash commands:', error.message);
@@ -269,3 +267,4 @@ client.on(Events.GuildCreate, async () => {
 });
 
 client.login(TOKEN);
+
