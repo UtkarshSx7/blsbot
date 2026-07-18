@@ -1,9 +1,11 @@
 const { Client, GatewayIntentBits, Events, EmbedBuilder, ActivityType, ApplicationCommandOptionType } = require('discord.js');
+const { joinVoiceChannel } = require('@discordjs/voice');
 
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildMembers,
+    GatewayIntentBits.GuildVoiceStates,
   ],
 });
 
@@ -110,6 +112,35 @@ async function setBotPresence() {
       name: `Watching : ${presenceName}`,
       type: ActivityType.Watching,
     });
+  }
+}
+
+async function joinSelectedVoiceChannel() {
+  const channelId = process.env.VOICE_CHANNEL_ID;
+  if (!channelId) return;
+
+  try {
+    const channel = await client.channels.fetch(channelId);
+    if (!channel || !channel.isVoiceBased || !channel.isVoiceBased()) {
+      console.warn(`VOICE_CHANNEL_ID ${channelId} is not a voice channel.`);
+      return;
+    }
+
+    const guild = channel.guild;
+    if (!guild) {
+      console.warn('Could not determine guild for voice channel.');
+      return;
+    }
+
+    joinVoiceChannel({
+      channelId: channel.id,
+      guildId: guild.id,
+      adapterCreator: guild.voiceAdapterCreator,
+    });
+
+    console.log(`Joined voice channel ${channelId}`);
+  } catch (error) {
+    console.warn('Failed to join voice channel:', error.message);
   }
 }
 
