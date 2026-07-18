@@ -214,24 +214,15 @@ async function registerSlashCommands(client) {
     console.log('GUILD_ID not set. Skip per-guild slash command registration.');
     return;
   }
-
-  const guild = client.guilds.cache.get(guildId);
-  if (!guild) {
-    console.log(`Guild ${guildId} not found in cache yet. Waiting for guild to become available...`);
-    return;
-  }
-
   try {
-    const existingCommands = await guild.commands.fetch();
+    // Fetch the guild from the API to ensure it's available even if not cached.
+    const guild = await client.guilds.fetch(guildId);
 
-    for (const command of COMMAND_DEFINITIONS) {
-      const hasCommand = existingCommands.some((existingCommand) => existingCommand.name === command.name);
-      if (!hasCommand) {
-        await guild.commands.create(command);
-      }
-    }
+    // Use commands.set to register (and update) all commands for the guild at once.
+    // Guild commands appear immediately in Discord.
+    await guild.commands.set(COMMAND_DEFINITIONS);
 
-    console.log('Slash commands ready');
+    console.log(`Slash commands registered for guild ${guildId}`);
   } catch (error) {
     console.warn('Could not register slash commands:', error.message);
   }
